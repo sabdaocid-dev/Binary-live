@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>v54 | SAFETY GUARD K1 (MODIFIED SAFE)</title>
+
+<style>
+:root{ --bg:#051015; --card:#0f1f2a; --text:#b0c4de; --buy:#00e676; --sell:#ff1744; --k1:#00bcd4; --cool:#ffab00; }
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Segoe UI', sans-serif; overflow-x: hidden;}
+.page{max-width:600px;margin:auto;padding:10px;}
+
+.card { 
+    background: var(--card); border-radius: 12px; padding: 20px; 
+    border: 1px solid #1e3a4d; box-shadow: 0 4px 25px rgba(0,0,0,0.4);
+}
+
+.header { display: flex; justify-content: space-between; border-bottom: 2px solid #1e3a4d; padding-bottom: 15px; margin-bottom: 20px; }
+.title { font-weight: 900; color: #fff; letter-spacing: 1px; }
+.clock { font-family: monospace; font-size: 16px; font-weight: bold; color: var(--k1); }
+
+/* VISUAL SCORE BOX */
+.score-container {
+    text-align: center; margin-bottom: 20px; padding: 15px;
+    background: rgba(0,0,0,0.3); border-radius: 10px; border: 1px solid #1e3a4d;
+}
+#visual-score { font-size: 48px; font-weight: 900; color: #fff; margin: 5px 0; }
+.score-label { font-size: 10px; color: #546e7a; text-transform: uppercase; letter-spacing: 2px; }
+
+.sig-box { text-align: center; padding: 20px; background: #0a151d; border-radius: 10px; border: 2px solid #1e3a4d; margin-bottom: 20px; transition: 0.3s; }
+.sig-badge { font-size: 12px; font-weight: bold; padding: 4px 10px; border-radius: 4px; display: inline-block; margin-bottom: 10px; color: #000; }
+.sig-val { font-size: 44px; font-weight: 900; line-height: 1; margin-bottom: 5px; }
+.sig-origin { font-size: 11px; font-family: monospace; color: #546e7a; }
+
+.b-buy { background: rgba(0, 230, 118, 0.1); border-color: var(--buy); }
+.t-buy { color: var(--buy); text-shadow: 0 0 20px rgba(0, 230, 118, 0.3); }
+.b-sell { background: rgba(255, 23, 68, 0.1); border-color: var(--sell); }
+.t-sell { color: var(--sell); text-shadow: 0 0 20px rgba(255, 23, 68, 0.3); }
+.b-cool { background: rgba(255, 171, 0, 0.1); border-color: var(--cool); }
+.t-cool { color: var(--cool); font-size: 28px; }
+
+.bg-k0 { background: #546e7a; color: #fff; }
+.bg-k1 { background: var(--k1); color: #000; }
+.bg-cool { background: var(--cool); color: #000; }
+
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;}
+.g-item { background: #0a151d; padding: 8px; border-radius: 6px; text-align: center; border: 1px solid #1e3a4d; }
+.g-val { font-size: 14px; font-weight: bold; color: #fff; display: block;}
+.g-lbl { font-size: 9px; color: #546e7a; }
+
+.l-list { max-height: 150px; overflow-y: auto; font-size: 12px; }
+.l-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #152533; }
+
+button { width: 100%; padding: 16px; background: var(--k1); color: #000; border: none; font-weight: 900; cursor: pointer; border-radius: 8px; margin-top: 10px; }
+.stop { background: #1e3a4d; color: #fff; }
+.res-win { color: var(--buy); font-weight: bold; }
+.res-loss { color: var(--sell); font-weight: bold; }
+</style>
+</head>
+
+<body>
+<div class="page">
+<div class="card">
+    <div class="header">
+        <span class="title">v54 SAFE K1 + AI SCORE</span>
+        <span id="clock" class="clock">00:00:00</span>
+    </div>
+
+    <div class="score-container">
+        <div class="score-label">Algorithm Confidence Score</div>
+        <div id="visual-score">0</div>
+        <div id="score-bar" style="height:4px; background:#333; width:100%; border-radius:2px; margin-top:5px;">
+            <div id="score-fill" style="height:100%; width:50%; background:var(--k1); transition:0.5s;"></div>
+        </div>
+    </div>
+
+    <div id="main-box" class="sig-box">
+        <span id="level-badge" class="sig-badge bg-k0" style="opacity:0">READY</span>
+        <div id="sig-val" class="sig-val" style="color:#475569">WAIT</div>
+        <div id="origin-time" class="sig-origin">MEMINDAI PASAR...</div>
+    </div>
+
+    <div class="grid">
+        <div class="g-item"><span id="ema-val" class="g-val">--</span><span class="g-lbl">EMA 10</span></div>
+        <div class="g-item"><span id="rsi-val" class="g-val">--</span><span class="g-lbl">RSI 14</span></div>
+        <div class="g-item"><span id="dna-match" class="g-val">0</span><span class="g-lbl">DNA MATCH</span></div>
+        <div class="g-item"><span id="prob-val" class="g-val">--</span><span class="g-lbl">PROB (MIN 65%)</span></div>
+    </div>
+
+    <input id="api" type="hidden" value="https://tradingpoin.com/chart/api/data?type=json&last=2160&pair_code=CRYIDX.B&timeframe=60&load_count=0&source=Binomo&val=Z-CRY/IDX"/>
+
+    <button onclick="startEngine()">AKTIFKAN SAFETY MODE</button>
+    <button class="stop" onclick="stopEngine()">STOP / RESET</button>
+
+    <div class="logs-area">
+        <div id="history" class="l-list"></div>
+    </div>
+</div>
+</div>
+
+<script>
+let engine = null, prevTime = null, activeChain = null, isCooldown = false;
+
+/* --- TEKNIKAL INDIKATOR --- */
+function calcEMA(data, period) {
+    let k = 2 / (period + 1);
+    let ema = data[0].C;
+    for (let i = 1; i < data.length; i++) {
+        ema = (data[i].C * k) + (ema * (1 - k));
+    }
+    return ema;
+}
+
+function calcRSI(data, period) {
+    if (data.length < period + 1) return 50;
+    let gains = 0, losses = 0;
+    for (let i = data.length - period; i < data.length; i++) {
+        let diff = data[i].C - data[i-1].C;
+        if (diff >= 0) gains += diff; else losses -= diff;
+    }
+    let rs = (gains / period) / (losses / period);
+    return 100 - (100 / (1 + rs));
+}
+
+function getFractal(candles) {
+    let last = candles.slice(-5);
+    if (last.length < 5) return null;
+    if (last[2].H > last[0].H && last[2].H > last[1].H && last[2].H > last[3].H && last[2].H > last[4].H) return "BEAR";
+    if (last[2].L < last[0].L && last[2].L < last[1].L && last[2].L < last[3].L && last[2].L < last[4].L) return "BULL";
+    return null;
+}
+
+/* --- DNA + MULTI-INDICATOR SCORING (SAFE K1 VERSION) --- */
+function analyzeMarket(candles) {
+    if(candles.length < 100) return { s: "WAIT", score: 0 };
+    
+    let score = 0;
+    let lastPrice = candles.at(-1).C;
+    
+    // 1. EMA 10 (Trend Cepat)
+    let ema10 = calcEMA(candles, 10);
+    if (lastPrice > ema10) score += 3; else score -= 3;
+
+    // 2. RSI 14 (Momentum Kuat - Threshold 40/60)
+    let rsi14 = calcRSI(candles, 14);
+    if (rsi14 > 60) score += 2; else if (rsi14 < 40) score -= 2;
+
+    // 3. Fractal Analysis
+    let frac = getFractal(candles);
+    if (frac === "BULL") score += 2; else if (frac === "BEAR") score -= 2;
+
+    // 4. DNA Pattern Matcher (Min. 65% Probability)
+    let dna = candles.map(c => c.C > c.O ? 1 : 0);
+    let sample = dna.slice(-4);
+    let m = 0, nG = 0, nR = 0;
+    for (let i = dna.length - 10; i >= 0; i--) {
+        if(dna.slice(i, i+4).every((v,k)=>v===sample[k])) {
+            m++; if(dna[i+4]===1) nG++; else nR++;
+        }
+    }
+    
+    let prob = 0;
+    if (m > 0) {
+        let pG = (nG/m)*100, pR = (nR/m)*100;
+        if (pG >= 65) { score += 3; prob = pG; }
+        else if (pR >= 65) { score -= 3; prob = pR; }
+    }
+
+    // UI Updates
+    document.getElementById('ema-val').innerText = ema10.toFixed(2);
+    document.getElementById('rsi-val').innerText = rsi14.toFixed(0);
+    document.getElementById('dna-match').innerText = m;
+    document.getElementById('prob-val').innerText = prob.toFixed(0) + "%";
+
+    // 5. Signal Threshold (Score 10 for Safety)
+    let signal = "WAIT";
+    if (score >= 10) signal = "BUY";
+    if (score <= -10) signal = "SELL";
+
+    return { s: signal, score: score, prob: prob };
+}
+
+async function runSystem() {
+    const timeNow = new Date().toLocaleTimeString('id-ID', {hour12: false});
+    document.getElementById('clock').innerText = timeNow;
+
+    try {
+        let r = await fetch(document.getElementById('api').value, {cache:'no-store'});
+        let j = await r.json();
+        let candles = j.data.map(x => ({ T: x[0], O: +x[1], H: +x[2], L: +x[3], C: +x[4] }));
+        let last = candles.at(-1);
+
+        let analysis = analyzeMarket(candles);
+        updateVisualScore(analysis.score);
+
+        if (prevTime && last.T !== prevTime) {
+            if (activeChain) {
+                let resCandle = candles.at(-2);
+                let win = activeChain.direction === 'BUY' ? resCandle.C >= activeChain.openPrice : resCandle.C <= activeChain.openPrice;
+                if (win) {
+                    logHistory(activeChain.startTime, activeChain.direction, "WIN", activeChain.level);
+                    activeChain = null; isCooldown = false;
+                } else {
+                    if (activeChain.level === 0) { 
+                        activeChain.level = 1; 
+                        activeChain.openPrice = last.O; 
+                    } else { 
+                        logHistory(activeChain.startTime, activeChain.direction, "LOSS", 1); 
+                        activeChain = null; 
+                        isCooldown = true; 
+                    }
+                }
+            }
+
+            if (activeChain) renderSignal(activeChain.direction, activeChain.level, activeChain.startTime);
+            else if (isCooldown) { 
+                renderSignal("COOLDOWN", -99, "--"); 
+                isCooldown = false; 
+            }
+            else if (analysis.s !== "WAIT") {
+                activeChain = { startTime: timeNow, direction: analysis.s, level: 0, openPrice: last.O };
+                renderSignal(analysis.s, 0, timeNow);
+            } else renderSignal("WAIT", -1, "--");
+        }
+        prevTime = last.T;
+    } catch(e) { console.error(e); }
+}
+
+function updateVisualScore(score) {
+    const el = document.getElementById('visual-score');
+    const fill = document.getElementById('score-fill');
+    el.innerText = (score > 0 ? "+" : "") + score;
+    
+    let percentage = ((score + 10) / 20) * 100;
+    fill.style.width = percentage + "%";
+    
+    if (score >= 10) el.style.color = "var(--buy)";
+    else if (score <= -10) el.style.color = "var(--sell)";
+    else el.style.color = "#fff";
+}
+
+function renderSignal(s, level, origin) {
+    const box = document.getElementById('main-box'), badge = document.getElementById('level-badge'), val = document.getElementById('sig-val'), time = document.getElementById('origin-time');
+    val.innerText = s; badge.style.opacity = "1";
+    if (s === "COOLDOWN") { box.className = "sig-box b-cool"; val.className = "sig-val t-cool"; val.innerText = "COOLDOWN"; badge.innerText = "SKIP 1"; badge.className = "sig-badge bg-cool"; return; }
+    if (s === "WAIT") { box.className = "sig-box"; val.style.color = "#475569"; badge.style.opacity = "0"; time.innerText = "MEMINDAI PASAR..."; return; }
+    time.innerText = "ENTRY AT: " + origin;
+    badge.innerText = level === 0 ? "ENTRY L0" : "SAFETY K1";
+    badge.className = level === 0 ? "sig-badge bg-k0" : "sig-badge bg-k1";
+    if (s === 'BUY') { box.className = "sig-box b-buy"; val.className = "sig-val t-buy"; }
+    else { box.className = "sig-box b-sell"; val.className = "sig-val t-sell"; }
+}
+
+function logHistory(time, s, res, lvl) {
+    const box = document.getElementById('history');
+    const d = document.createElement('div');
+    d.className = "l-item";
+    d.innerHTML = `<span>${time} | ${s}</span><span class="${res === 'WIN' ? 'res-win' : 'res-loss'}">${res} ${lvl === 1 ? '(K1)' : ''}</span>`;
+    box.prepend(d);
+}
+
+window.startEngine = () => { if(engine) return; engine=setInterval(runSystem, 1000); }
+window.stopEngine = () => { clearInterval(engine); engine=null; renderSignal("WAIT",-1,"--"); activeChain=null; updateVisualScore(0); }
+</script>
+</body>
+</html>
